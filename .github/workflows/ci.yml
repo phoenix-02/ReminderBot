@@ -24,3 +24,9 @@ jobs:
 
       - name: Run script
         run: npm start
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          DEFAULT_GROUP_ID: ${{ secrets.DEFAULT_GROUP_ID }}
+          GROUP_IDS: ${{ secrets.GROUP_IDS }}
+          BOT_TAG: ${{ secrets.BOT_TAG }}
+          ALLOWED_USERS: ${{ secrets.ALLOWED_USERS }}
