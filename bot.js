@@ -4,8 +4,8 @@ const moment = require('moment-timezone');
 const token = process.env.TG_TOKEN;
 const defaultGroupId = process.env.DEFAULT_GROUP_ID;
 const botTag = process.env.BOT_TAG;
-const groupIds = process.env.GROUP_IDS.split(', ');
-const allowedUsers = process.env.ALLOWED_USERS.split(', ');
+const groupIds = process.env.GROUP_IDS?.split(', ');
+const allowedUsers = process.env.ALLOWED_USERS?.split(', ');
 
 const botTagRegExp = new RegExp(`${ botTag }`, 'g');
 const bot = new TelegramBot(token, { polling: true });
