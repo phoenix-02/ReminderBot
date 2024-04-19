@@ -8,14 +8,36 @@ const groupIds = process.env.GROUP_IDS.split(', ');
 const allowedUsers = process.env.ALLOWED_USERS.split(', ');
 
 const botTagRegExp = new RegExp(`${ botTag }`, 'g');
-const bot = new TelegramBot(token, { polling: true });
 
 let messageText = 'Время отправить фото показателей в группу "Контроль CTE"';
 let interval = 60 * 1000;
 let intervalId = null;
 let startTime = null;
 
-bot.sendMessage(defaultGroupId, 'Я родился');
+
+
+class MyTelegramBot {
+    constructor() {
+        this.bot = null;
+        this.initializeBot();
+    }
+
+    initializeBot() {
+        if (!this.bot) {
+            const TelegramBot = require('node-telegram-bot-api');
+            this.bot = new TelegramBot(token, { polling: true });
+            this.bot.sendMessage(defaultGroupId, 'Я родился');
+        }
+    }
+
+    getBotInstance() {
+        return this.bot;
+    }
+}
+
+const bot = (new MyTelegramBot()).getBotInstance()
+
+
 
 const sendMessage = (messageTextToSend) => {
     groupIds.forEach(groupId => bot.sendMessage(groupId, messageTextToSend));
