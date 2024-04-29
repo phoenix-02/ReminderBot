@@ -1,46 +1,57 @@
 const TelegramBot = require('node-telegram-bot-api');
 const moment = require('moment-timezone');
-
+const fs = require('fs');
 const token = process.env.TG_TOKEN;
-const defaultGroupId = process.env.DEFAULT_GROUP_ID;
-const botTag = process.env.BOT_TAG;
-const groupIds = process.env.GROUP_IDS.split(', ');
-const allowedUsers = process.env.ALLOWED_USERS.split(', ');
+const filePath = './data.json'
 
-const botTagRegExp = new RegExp(`${ botTag }`, 'g');
 
-let messageText = 'Время отправить фото показателей в группу "Контроль CTE"';
-let interval = 60 * 1000;
+
 let intervalId = null;
-let startTime = null;
 
 
-
-class MyTelegramBot {
-    constructor() {
-        this.bot = null;
-        this.initializeBot();
-    }
-
-    initializeBot() {
-        if (!this.bot) {
-            const TelegramBot = require('node-telegram-bot-api');
-            this.bot = new TelegramBot(token, { polling: true });
-            this.bot.sendMessage(defaultGroupId, 'Я родился');
-        }
-    }
-
-    getBotInstance() {
-        return this.bot;
+function readFromJson() {
+    try {
+        const jsonData = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(jsonData);
+    } catch (err) {
+        console.error('Error reading JSON file:', err);
+        return {};
     }
 }
 
-const bot = (new MyTelegramBot()).getBotInstance()
+
+let { messageText, interval, startTime, chatIds, defaultChatId, allowedUsers, botTag } = readFromJson()
+const botTagRegExp = new RegExp(`${ botTag }`, 'g');
+
+bot = new TelegramBot(token, { polling: true });
+
+defaultChatId && bot.sendMessage(defaultChatId, 'Я родился');
 
 
+console.log({messageText, interval, startTime, chatIds, defaultChatId, allowedUsers, botTag})
 
-const sendMessage = (messageTextToSend) => {
-    groupIds.forEach(groupId => bot.sendMessage(groupId, messageTextToSend));
+function writeDataToJSON(data) {
+    let jsonData = {};
+    try {
+        const existingData = fs.readFileSync(filePath, 'utf8');
+        jsonData = JSON.parse(existingData);
+    } catch (err) {
+        console.error('Error reading JSON file:', err);
+    }
+
+    jsonData = { ...jsonData, ...data };
+
+    fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), (err) => {
+        if (err) {
+            console.error('Error writing JSON file:', err);
+        } else {
+            console.log('Data has been successfully written to JSON file.');
+        }
+    });
+}
+
+const sendMessage = (messageText) => {
+    chatIds.forEach(groupId => bot.sendMessage(groupId, messageText));
 };
 
 const startSendingMessages = () => {
@@ -65,7 +76,7 @@ const scheduleSendingMessages = (startHour, startMinute) => {
     const delay = scheduledTime.diff(now);
     setTimeout(() => {
         startSendingMessages();
-        bot.sendMessage(defaultGroupId, 'Рассылка сообщений начата.');
+        bot.sendMessage(defaultChatId, 'Рассылка сообщений начата.');
     }, delay);
 };
 
@@ -83,6 +94,8 @@ const checkPermission = (msg, handler) => {
 };
 
 const botStart = (msg) => {
+    chatIds.push(String(msg.chat.id))
+    writeDataToJSON({chatIds: [...new Set(chatIds)]})
 
     if(startTime === null) {
         startSendingMessages();
@@ -103,7 +116,8 @@ const botInterval = (msg, args) => {
 
     const newInterval = 60 * 1000 * parseInt(args);
     if(!isNaN(newInterval)) {
-        interval = newInterval;
+        writeDataToJSON({"interval": newInterval});
+        interval = newInterval
         if(intervalId !== null) {
             stopSendingMessages();
             startSendingMessages();
@@ -117,8 +131,8 @@ const botInterval = (msg, args) => {
 };
 
 const botMessage = (msg, args) => {
-
-    messageText = args;
+    messageText = args
+    writeDataToJSON({messageText});
     bot.sendMessage(msg.chat.id, 'Текст сообщения успешно изменен.');
 
 };
@@ -138,6 +152,7 @@ const botSetTime = (msg, args) => {
 
     if(!isNaN(startHour) && !isNaN(startMinute) && startHour >= 0 && startHour < 24 && startMinute >= 0 && startMinute < 60) {
         startTime = moment().tz('Europe/Moscow').set({ hour: startHour, minute: startMinute });
+        writeDataToJSON({startTime});
         bot.sendMessage(msg.chat.id, `Время начала рассылки установлено на ${ startTime.format('HH:mm') }.`);
         if(intervalId === null) {
             stopSendingMessages();
@@ -206,7 +221,7 @@ bot.onText(botTagRegExp, (msg) => {
     }
 });
 
-bot.onText(/\/id/, (msg) => {
+bot.onText(/\/chatId/, (msg) => {
     const chatId = msg.chat.id;
     console.log(chatId, `Привет! ID этой группы: ${ chatId }`);
     console.log(msg.text, `текст сообщения`);
