@@ -1,0 +1,9 @@
+{
+"messageText": "Время отправить фото показателей в группу \"Контроль CTE\"",
+"chatIds": ["-4179062286", "-4175077920", "-1002010263892"],
+"defaultChatId": "-1002010263892",
+"allowedUsers": ["416110924", "766507246"],
+"botTag": "@reminderTestTestBot",
+"startTime": null,
+"interval": 3
+}

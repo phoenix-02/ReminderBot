@@ -4,8 +4,6 @@ const fs = require('fs');
 const token = process.env.TG_TOKEN;
 const filePath = './data.json'
 
-
-
 let intervalId = null;
 
 
